@@ -1,6 +1,12 @@
 <template>
 <div class="app">
     <h1>Страница с постами</h1>
+    <my-input 
+    v-model="searchQuery"
+    placeholder="Поиск..."
+    >
+
+    </my-input>
     <div class="add__btns">
         <my-button
         @click="showDialog"
@@ -14,7 +20,7 @@
         <post-form @create="createPost"/>
     </my-dialog>
     <post-list 
-    v-bind:posts="posts" 
+    v-bind:posts="sortedAndSearchedPosts" 
     @remove="removePost"
     v-if="!isPostsLoading"
     />
@@ -25,6 +31,7 @@
 import PostForm from '@/components/PostForm.vue';
 import PostList from '@/components/PostList.vue';
 import axios from 'axios';
+
 export default {
     components: {
         PostForm, PostList
@@ -38,6 +45,9 @@ export default {
             modificatorValue: '',
             isPostsLoading: false,
             selectedSort: '',
+            searchQuery: '',
+            page: 1,
+            limit: 10,
             sortOptions: [
                 {value: 'title', name: 'По названию'},
                 {value: 'body', name: 'По содержимому'},
@@ -60,7 +70,12 @@ export default {
             try {
                 this.isPostsLoading = true;
                 setTimeout(async () => {
-                    const response = await axios.get('https://jsonplaceholder.typicode.com/posts?_limit=10');
+                    const response = await axios.get('https://jsonplaceholder.typicode.com/posts', {
+                        params: {
+                            _page: this.page,
+                            _limit: this.limit
+                        }
+                    });
                     this.posts = response.data;
                     this.isPostsLoading = false;
                 }, 1000)
@@ -72,6 +87,17 @@ export default {
     mounted() {
         this.fetchPosts();
     },
+    computed: {
+        sortedPosts() {
+        return [...this.posts].sort((post1, post2) => 
+           post1[this.selectedSort]?.localeCompare(post2[this.selectedSort])
+           )
+        },
+        sortedAndSearchedPosts() {
+            return this.sortedPosts.filter(post => post.title.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        }
+    },
+   
 }
 </script>
 <style scoped>
